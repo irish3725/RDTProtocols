@@ -91,7 +91,7 @@ class RDT:
             self.byte_buffer = self.byte_buffer[length:]
             #if this was the last packet, will return on the next iteration
             
-    # so far exactly the same as 1_0 
+    # so fark exactly the same as 1_0 
     def rdt_2_1_send(self, msg_S):
         p = Packet(self.seq_num, msg_S)
         self.seq_num += 1
@@ -103,19 +103,22 @@ class RDT:
         byte_S = self.network.udt_receive()
         self.byte_buffer += byte_S
         #keep extracting packets - if reordered, could get more than one
+        corrupt = False
         while True:
+            if(corrupt):
+                print("packet was corrupt")
             #check if we have received enough bytes
             if(len(self.byte_buffer) < Packet.length_S_length):
-                return ret_S #not enough bytes to read packet length
+                return ret_S, corrupt #not enough bytes to read packet length
             #extract length of packet
             length = int(self.byte_buffer[:Packet.length_S_length])
             if len(self.byte_buffer) < length:
-                return ret_S #not enough bytes to read the whole packet
+                return ret_S, corrupt #not enough bytes to read the whole packet
             #create packet from buffer content and add to return string
             p,corrupt = Packet.from_byte_S(self.byte_buffer[0:length])
            
-            if (corrupt):
-                print("!!!!!!!!!!!CORRUPTPACKET!!!!!!!!!!!!!\n!!!!!!!!!!!CORRUPTPACKET!!!!!!!!!!!!!\n!!!!!!!!!!!CORRUPTPACKET!!!!!!!!!!!!!\n!!!!!!!!!!!CORRUPTPACKET!!!!!!!!!!!!!\n!!!!!!!!!!!!CORRUPTPACKET!!!!!!!!!!!!!!")
+#            if (corrupt):
+#                print("!!!!!!!!!!!CORRUPTPACKET!!!!!!!!!!!!!\n!!!!!!!!!!!CORRUPTPACKET!!!!!!!!!!!!!\n!!!!!!!!!!!CORRUPTPACKET!!!!!!!!!!!!!\n!!!!!!!!!!!CORRUPTPACKET!!!!!!!!!!!!!\n!!!!!!!!!!!!CORRUPTPACKET!!!!!!!!!!!!!!")
  
             ret_S = p.msg_S if (ret_S is None) else ret_S + p.msg_S
             #remove the packet bytes from the buffer
