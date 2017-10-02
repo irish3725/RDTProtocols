@@ -17,14 +17,12 @@ class Packet:
         
     @classmethod
     def from_byte_S(self, byte_S):
-        corrupt = False
         if Packet.corrupt(byte_S):
-            corrupt = True
-#            raise RuntimeError('Cannot initialize Packet: byte_S is corrupt')
+            raise RuntimeError('Cannot initialize Packet: byte_S is corrupt')
         #extract the fields
         seq_num = int(byte_S[Packet.length_S_length : Packet.length_S_length+Packet.seq_num_S_length])
         msg_S = byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length :]
-        return self(seq_num, msg_S), corrupt
+        return self(seq_num, msg_S)
         
         
     def get_byte_S(self):
@@ -105,22 +103,20 @@ class RDT:
         #keep extracting packets - if reordered, could get more than one
         corrupt = False
         while True:
-            if(corrupt):
-                print("packet was corrupt")
             #check if we have received enough bytes
             if(len(self.byte_buffer) < Packet.length_S_length):
-                return ret_S, corrupt #not enough bytes to read packet length
+                return ret_S #not enough bytes to read packet length
             #extract length of packet
             length = int(self.byte_buffer[:Packet.length_S_length])
             if len(self.byte_buffer) < length:
-                return ret_S, corrupt #not enough bytes to read the whole packet
+                return ret_S #not enough bytes to read the whole packet
             #create packet from buffer content and add to return string
-            p,corrupt = Packet.from_byte_S(self.byte_buffer[0:length])
-           
-#            if (corrupt):
-#                print("!!!!!!!!!!!CORRUPTPACKET!!!!!!!!!!!!!\n!!!!!!!!!!!CORRUPTPACKET!!!!!!!!!!!!!\n!!!!!!!!!!!CORRUPTPACKET!!!!!!!!!!!!!\n!!!!!!!!!!!CORRUPTPACKET!!!!!!!!!!!!!\n!!!!!!!!!!!!CORRUPTPACKET!!!!!!!!!!!!!!")
- 
-            ret_S = p.msg_S if (ret_S is None) else ret_S + p.msg_S
+            try: 
+                p = Packet.from_byte_S(self.byte_buffer[0:length])
+                ret_S = p.msg_S if (ret_S is None) else ret_S + p.msg_S
+            except:
+                print("catch block worked")           
+
             #remove the packet bytes from the buffer
             self.byte_buffer = self.byte_buffer[length:]
             #if this was the last packet, will return on the next iteration
