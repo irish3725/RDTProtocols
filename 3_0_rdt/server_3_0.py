@@ -49,7 +49,11 @@ if __name__ == '__main__':
             except:
                 print('Client no longer online')
                 break
-            #print('Got a corrupt package, sending NACK')
+            #just to show what happened in print statements
+            if corrupt: 
+                print('\nGot a corrupt package. Sending NACK\n')
+            if time_of_last_data + timeout < time.time():
+                print('\nTimed out. Sending Nack.\n')
             #reset time_of_last_data to avoid timeout 
             time_of_last_data = time.time() 
             #skip over rest of loop so it doesn't try to

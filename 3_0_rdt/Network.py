@@ -10,8 +10,8 @@ import rdt_3_0
 ## Provides an abstraction for the network layer
 class NetworkLayer:
     #configuration parameters
-    prob_pkt_loss = .5
-    prob_byte_corr = .1 
+    prob_pkt_loss = .25
+    prob_byte_corr = .25 
     prob_pkt_reorder = 0
     
     #class variables

@@ -43,6 +43,7 @@ if __name__ == '__main__':
         #try to receiver message before timeout
         msg_S, corrupt = rdt.rdt_2_1_receive()
         if corrupt:
+            print('\nReceived corrupt package. Sending NACK\n')
             #send NACK package  
             rdt.rdt_2_1_send(NACK())
             #print('Got a corrupt package, sending NACK')
