@@ -24,6 +24,9 @@ def piglatinize(message):
         essagemay += " "+makePigLatin(word)
     return essagemay.strip()+"."
 
+def NACK():
+    return "NACK" 
+
 
 if __name__ == '__main__':
     parser =  argparse.ArgumentParser(description='Pig Latin conversion server.')
@@ -50,7 +53,4 @@ if __name__ == '__main__':
         rdt.rdt_2_1_send(rep_msg_S)
         
     rdt.disconnect()
-
-    
-    
     

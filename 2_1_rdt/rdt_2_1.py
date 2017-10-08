@@ -105,17 +105,18 @@ class RDT:
         while True:
             #check if we have received enough bytes
             if(len(self.byte_buffer) < Packet.length_S_length):
-                return ret_S #not enough bytes to read packet length
+                return ret_S, corrupt #not enough bytes to read packet length
             #extract length of packet
             length = int(self.byte_buffer[:Packet.length_S_length])
             if len(self.byte_buffer) < length:
-                return ret_S #not enough bytes to read the whole packet
+                return ret_S, corrupt #not enough bytes to read the whole packet
             #create packet from buffer content and add to return string
             try: 
                 p = Packet.from_byte_S(self.byte_buffer[0:length])
                 ret_S = p.msg_S if (ret_S is None) else ret_S + p.msg_S
             except:
                 print("catch block worked")           
+                corrupt = True;
 
             #remove the packet bytes from the buffer
             self.byte_buffer = self.byte_buffer[length:]
