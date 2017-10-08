@@ -42,7 +42,7 @@ if __name__ == '__main__':
     while(True):
         #try to receiver message before timeout
         msg_S, corrupt = rdt.rdt_3_0_receive()
-        if corrupt:
+        if time_of_last_data + timeout < time.time() or corrupt:
             #send NACK package  
             rdt.rdt_3_0_send(NACK())
             #print('Got a corrupt package, sending NACK')
@@ -53,10 +53,10 @@ if __name__ == '__main__':
             msg_S = ''
         else: 
             if msg_S is None:
-                if time_of_last_data + timeout < time.time():
-                    break
-                else:
-                    continue
+#                if time_of_last_data + timeout < time.time():
+#                    break
+#                else:
+                continue
             time_of_last_data = time.time()
             
             #convert and reply

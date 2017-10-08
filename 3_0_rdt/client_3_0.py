@@ -35,7 +35,7 @@ if __name__ == '__main__':
             msg_S, corrupt = rdt.rdt_3_0_receive()
             #check to see if the message was corrupt or
             #we have received a NACK 
-            if corrupt or msg_S == "NACK":
+            if time_of_last_data + timeout < time.time() or corrupt or msg_S == "NACK":
                 #print('Got corrupt package or NACK') 
                 #resend the message
                 rdt.rdt_3_0_send(last_msg)
@@ -48,10 +48,10 @@ if __name__ == '__main__':
                 #skip over rest of loop to avoid printing NACK 
                 continue 
             if msg_S is None:
-                if time_of_last_data + timeout < time.time():
-                    break
-                else:
-                    continue
+#                if time_of_last_data + timeout < time.time():
+#                    break
+#                else:
+                continue
         time_of_last_data = time.time()
         
         #print the result
