@@ -114,8 +114,9 @@ class RDT:
             try: 
                 p = Packet.from_byte_S(self.byte_buffer[0:length])
                 ret_S = p.msg_S if (ret_S is None) else ret_S + p.msg_S
+            #if packet was corrupt, set corrupt to True
+            #will return blank packet and true next iteration
             except:
-                print("catch block worked")           
                 corrupt = True;
 
             #remove the packet bytes from the buffer

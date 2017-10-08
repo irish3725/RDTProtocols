@@ -43,13 +43,13 @@ if __name__ == '__main__':
         #try to receiver message before timeout
         msg_S, corrupt = rdt.rdt_2_1_receive()
         if corrupt:
-            # send NACK package  
+            #send NACK package  
             rdt.rdt_2_1_send(NACK())
-            print('Got a corrupt package, sending NACK')
-            # reset time_of_last_data to avoid timeout 
+            #print('Got a corrupt package, sending NACK')
+            #reset time_of_last_data to avoid timeout 
             time_of_last_data = time.time() 
-            # skip over rest of loop so it doesn't try to
-            # piglatinize it
+            #skip over rest of loop so it doesn't try to
+            #piglatinize it
             msg_S = ''
         else: 
             if msg_S is None:
