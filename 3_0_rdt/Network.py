@@ -3,7 +3,7 @@ import socket
 import threading
 from time import sleep
 import random
-import RDT
+import rdt_3_0
 
 
 
@@ -11,7 +11,7 @@ import RDT
 class NetworkLayer:
     #configuration parameters
     prob_pkt_loss = 0
-    prob_byte_corr = 0
+    prob_byte_corr = .1 
     prob_pkt_reorder = 0
     
     #class variables
@@ -21,7 +21,7 @@ class NetworkLayer:
     lock = threading.Lock()
     collect_thread = None
     stop = None
-    socket_timeout = 0.1
+    socket_timeout = 1
     reorder_msg_S = None
     
     def __init__(self, role_S, server_S, port):
@@ -62,7 +62,7 @@ class NetworkLayer:
             return
         #corrupt a packet
         if random.random() < self.prob_byte_corr:
-            start = random.randint(RDT.Packet.length_S_length,len(msg_S)-5)
+            start = random.randint(rdt_3_0.Packet.length_S_length,len(msg_S)-5)
             num = random.randint(1,5)
             repl_S = ''.join(random.sample('XXXXX', num)) #sample length >= num
             msg_S = msg_S[:start]+repl_S+msg_S[start+num:]

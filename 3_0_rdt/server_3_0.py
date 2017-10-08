@@ -1,5 +1,5 @@
 import argparse
-import RDT
+import rdt_3_0
 import time
 
 
@@ -24,6 +24,9 @@ def piglatinize(message):
         essagemay += " "+makePigLatin(word)
     return essagemay.strip()+"."
 
+def NACK():
+    return "NACK" 
+
 
 if __name__ == '__main__':
     parser =  argparse.ArgumentParser(description='Pig Latin conversion server.')
@@ -33,24 +36,33 @@ if __name__ == '__main__':
     timeout = 5 #close connection if no new data within 5 seconds
     time_of_last_data = time.time()
     
-    rdt = RDT.RDT('server', None, args.port)
+    rdt = rdt_3_0.RDT('server', None, args.port)
+    
+    corrupt = False 
     while(True):
         #try to receiver message before timeout
-        msg_S = rdt.rdt_1_0_receive()
-        if msg_S is None:
-            if time_of_last_data + timeout < time.time():
-                break
-            else:
-                continue
-        time_of_last_data = time.time()
-        
-        #convert and reply
-        rep_msg_S = piglatinize(msg_S)
-        print('Converted %s \nto %s\n' % (msg_S, rep_msg_S))
-        rdt.rdt_1_0_send(rep_msg_S)
-        
+        msg_S, corrupt = rdt.rdt_3_0_receive()
+        if corrupt:
+            #send NACK package  
+            rdt.rdt_3_0_send(NACK())
+            #print('Got a corrupt package, sending NACK')
+            #reset time_of_last_data to avoid timeout 
+            time_of_last_data = time.time() 
+            #skip over rest of loop so it doesn't try to
+            #piglatinize it
+            msg_S = ''
+        else: 
+            if msg_S is None:
+                if time_of_last_data + timeout < time.time():
+                    break
+                else:
+                    continue
+            time_of_last_data = time.time()
+            
+            #convert and reply
+            rep_msg_S = piglatinize(msg_S)
+            print('Converted %s \nto %s\n' % (msg_S, rep_msg_S))
+            rdt.rdt_3_0_send(rep_msg_S)
+            
     rdt.disconnect()
-
-    
-    
     

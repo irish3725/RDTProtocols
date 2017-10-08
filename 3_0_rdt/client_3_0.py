@@ -1,5 +1,5 @@
 import argparse
-import RDT
+import rdt_3_0
 import time
 
 if __name__ == '__main__':
@@ -18,15 +18,35 @@ if __name__ == '__main__':
     timeout = 2 #send the next message if not response
     time_of_last_data = time.time()
      
-    rdt = RDT.RDT('client', args.server, args.port)
+    rdt = rdt_3_0.RDT('client', args.server, args.port)
     for msg_S in msg_L:
         print('Converting: '+msg_S)
-        rdt.rdt_1_0_send(msg_S)
-       
-        # try to receive message before timeout 
+        rdt.rdt_3_0_send(msg_S)
+      
+        #keep track of last message in case we lose it 
+        last_msg = msg_S 
+        #try to receive message before timeout 
         msg_S = None
+        #where we keep track of whether packet is corrupt
+        #or if receiving a NACK since they are handled
+        #the same.
+        corrupt = False
         while msg_S == None:
-            msg_S = rdt.rdt_1_0_receive()
+            msg_S, corrupt = rdt.rdt_3_0_receive()
+            #check to see if the message was corrupt or
+            #we have received a NACK 
+            if corrupt or msg_S == "NACK":
+                #print('Got corrupt package or NACK') 
+                #resend the message
+                rdt.rdt_3_0_send(last_msg)
+                #reset time_of_last_data to avoid timeout
+                time_of_last_data = time.time()
+                #set msg_S back to None
+                msg_S = None 
+                #set corrupt back to False
+                corrupt = False 
+                #skip over rest of loop to avoid printing NACK 
+                continue 
             if msg_S is None:
                 if time_of_last_data + timeout < time.time():
                     break
