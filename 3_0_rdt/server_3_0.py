@@ -44,7 +44,11 @@ if __name__ == '__main__':
         msg_S, corrupt = rdt.rdt_3_0_receive()
         if time_of_last_data + timeout < time.time() or corrupt:
             #send NACK package  
-            rdt.rdt_3_0_send(NACK())
+            try: 
+                rdt.rdt_3_0_send(NACK())
+            except:
+                print('Client no longer online')
+                break
             #print('Got a corrupt package, sending NACK')
             #reset time_of_last_data to avoid timeout 
             time_of_last_data = time.time() 
