@@ -37,20 +37,32 @@ if __name__ == '__main__':
     time_of_last_data = time.time()
     
     rdt = rdt_2_1.RDT('server', None, args.port)
+    
+    corrupt = False 
     while(True):
         #try to receiver message before timeout
-        msg_S = rdt.rdt_2_1_receive()
-        if msg_S is None:
-            if time_of_last_data + timeout < time.time():
-                break
-            else:
-                continue
-        time_of_last_data = time.time()
-        
-        #convert and reply
-        rep_msg_S = piglatinize(msg_S)
-        print('Converted %s \nto %s\n' % (msg_S, rep_msg_S))
-        rdt.rdt_2_1_send(rep_msg_S)
-        
+        msg_S, corrupt = rdt.rdt_2_1_receive()
+        if corrupt:
+            # send NACK package  
+            rdt.rdt_2_1_send(NACK())
+            print('Got a corrupt package, sending NACK')
+            # reset time_of_last_data to avoid timeout 
+            time_of_last_data = time.time() 
+            # skip over rest of loop so it doesn't try to
+            # piglatinize it
+            msg_S = ''
+        else: 
+            if msg_S is None:
+                if time_of_last_data + timeout < time.time():
+                    break
+                else:
+                    continue
+            time_of_last_data = time.time()
+            
+            #convert and reply
+            rep_msg_S = piglatinize(msg_S)
+            print('Converted %s \nto %s\n' % (msg_S, rep_msg_S))
+            rdt.rdt_2_1_send(rep_msg_S)
+            
     rdt.disconnect()
     
