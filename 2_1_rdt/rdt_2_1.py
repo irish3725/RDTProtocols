@@ -64,13 +64,14 @@ class RDT:
 
     def __init__(self, role_S, server_S, port):
         self.network = Network.NetworkLayer(role_S, server_S, port)
-        role = role_S
+        self.role = role_S
+        print('--ran init method. role_S is', role_S, 'role is', self.role)
     
     def disconnect(self):
         self.network.disconnect()
         
     def rdt_1_0_send(self, msg_S):
-        last_msg = msg_S
+        self.last_msg = msg_S
         p = Packet(self.seq_num, msg_S)
         self.seq_num += 1
         self.network.udt_send(p.get_byte_S())
@@ -96,7 +97,7 @@ class RDT:
             #if this was the last packet, will return on the next iteration
             
     def rdt_2_1_send(self, msg_S):
-        last_msg = msg_S
+        self.last_msg = msg_S
         p = Packet(self.seq_num, msg_S)
         self.seq_num += 1
         self.network.udt_send(p.get_byte_S())
@@ -122,12 +123,22 @@ class RDT:
             #if packet was corrupt, set corrupt to True
             #will return blank packet and true next iteration
             except:
+                print('--my role is', self.role)
                 if(self.role == 'client'):
-                    p = Packet(self.seq_num, last_mst)
-                    self.network.ude_send(p.get_byte_S())
+                    p = Packet(self.seq_num, self.last_msg)
+                    self.network.udt_send(p.get_byte_S())
+                    ret_S = None
+                    byte_S = self.network.udt_receive()
+                    self.byte_buffer += byte_S
+                    print('Found corrupt packet, resending.')
+
                 else:
                     p = Packet(self.seq_num, 'NACK')
-                    self.network.udt_send(p.get_byte_s()) 
+                    self.network.udt_send(p.get_byte_S()) 
+                    ret_S = None
+                    byte_S = self.network.udt_receive()
+                    self.byte_buffer += byte_S
+                    print('Found corrupt packet, sending NACK.')
 
             #remove the packet bytes from the buffer
             self.byte_buffer = self.byte_buffer[length:]

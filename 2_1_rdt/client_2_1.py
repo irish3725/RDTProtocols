@@ -16,7 +16,7 @@ if __name__ == '__main__':
     
      
     timeout = 2 #send the next message if not response
-    time_of_last_data = time.time()
+    time_of_last_data = time.time() + 100000000
      
     rdt = rdt_2_1.RDT('client', args.server, args.port)
     for msg_S in msg_L:
@@ -32,7 +32,7 @@ if __name__ == '__main__':
                     break
                 else:
                     continue
-        time_of_last_data = time.time()
+        #time_of_last_data = time.time()
         
         #print the result
         if msg_S:
