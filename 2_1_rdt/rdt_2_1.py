@@ -65,7 +65,6 @@ class RDT:
     def __init__(self, role_S, server_S, port):
         self.network = Network.NetworkLayer(role_S, server_S, port)
         self.role = role_S
-        print('--ran init method. role_S is', role_S, 'role is', self.role)
     
     def disconnect(self):
         self.network.disconnect()
@@ -109,6 +108,15 @@ class RDT:
         self.byte_buffer += byte_S
         #keep extracting packets - if reordered, could get more than one
         while True:
+            #catch NACK
+            if(ret_S == 'NACK'):
+                p = Packet(self.seq_num, self.last_msg)
+                self.network.udt_send(p.get_byte_S())
+                ret_S = None
+                byte_S = self.network.udt_receive()
+                self.byte_buffer += byte_S
+                print('Received NACK packet, resending.')
+    
             #check if we have received enough bytes
             if(len(self.byte_buffer) < Packet.length_S_length):
                 return ret_S #not enough bytes to read packet length
@@ -123,14 +131,13 @@ class RDT:
             #if packet was corrupt, set corrupt to True
             #will return blank packet and true next iteration
             except:
-                print('--my role is', self.role)
                 if(self.role == 'client'):
                     p = Packet(self.seq_num, self.last_msg)
                     self.network.udt_send(p.get_byte_S())
                     ret_S = None
                     byte_S = self.network.udt_receive()
                     self.byte_buffer += byte_S
-                    print('Found corrupt packet, resending.')
+                    print('received corrupt packet, resending.')
 
                 else:
                     p = Packet(self.seq_num, 'NACK')
@@ -138,7 +145,7 @@ class RDT:
                     ret_S = None
                     byte_S = self.network.udt_receive()
                     self.byte_buffer += byte_S
-                    print('Found corrupt packet, sending NACK.')
+                    print('Received corrupt packet, sending NACK.')
 
             #remove the packet bytes from the buffer
             self.byte_buffer = self.byte_buffer[length:]
