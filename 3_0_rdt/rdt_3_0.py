@@ -1,6 +1,6 @@
 import Network
 import argparse
-from time import sleep
+import time 
 import hashlib
 
 
@@ -57,24 +57,62 @@ class RDT:
     seq_num = 1
     ## buffer of bytes read from network
     byte_buffer = '' 
+    ## last message sent by whoever is using send
+    last_msg = ''
+    ## who is using this object
+    role = ''
+    ## timeout for catching dropped packets
+    timeout = 2
+    ## to keep track of time since last packet sent 
+    time_of_last_data = time.time()
 
     def __init__(self, role_S, server_S, port):
         self.network = Network.NetworkLayer(role_S, server_S, port)
+        self.role = role_S
     
     def disconnect(self):
         self.network.disconnect()
         
-    def rdt_1_0_send(self, msg_S):
+    def rdt_3_0_send(self, msg_S):
+        self.last_msg = msg_S
         p = Packet(self.seq_num, msg_S)
         self.seq_num += 1
         self.network.udt_send(p.get_byte_S())
-        
-    def rdt_1_0_receive(self):
+    
+    def rdt_3_0_receive(self):
         ret_S = None
         byte_S = self.network.udt_receive()
         self.byte_buffer += byte_S
         #keep extracting packets - if reordered, could get more than one
+        
         while True:
+            #catch dropped packet
+            if(self.time_of_last_data + self.timeout < time.time()):
+                if(self.role == 'client'):
+                    p = Packet(self.seq_num, self.last_msg)
+                    self.network.udt_send(p.get_byte_S())
+                    print('\nResponse timed out, resending.\n')
+                else:
+                    p = Packet(self.seq_num, 'NACK')
+                    self.network.udt_send(p.get_byte_S())
+
+                    print('\nResponse timed out, sending NACK.\n')
+
+                ret_S = None
+                byte_S = self.network.udt_receive()
+                self.byte_buffer += byte_S
+                self.time_of_last_data = time.time()
+            
+            #catch nack
+            if(ret_S == 'NACK'):
+                p = Packet(self.seq_num, self.last_msg)
+                self.network.udt_send(p.get_byte_S())
+                ret_S = None
+                byte_S = self.network.udt_receive()
+                self.byte_buffer += byte_S
+                print('\nReceived NACK packet, resending.\n')
+                self.time_of_last_data = time.time()
+    
             #check if we have received enough bytes
             if(len(self.byte_buffer) < Packet.length_S_length):
                 return ret_S #not enough bytes to read packet length
@@ -83,45 +121,35 @@ class RDT:
             if len(self.byte_buffer) < length:
                 return ret_S #not enough bytes to read the whole packet
             #create packet from buffer content and add to return string
-            p = Packet.from_byte_S(self.byte_buffer[0:length])
-            ret_S = p.msg_S if (ret_S is None) else ret_S + p.msg_S
-            #remove the packet bytes from the buffer
-            self.byte_buffer = self.byte_buffer[length:]
-            #if this was the last packet, will return on the next iteration
-            
-    def rdt_3_0_send(self, msg_S):
-        p = Packet(self.seq_num, msg_S)
-        self.seq_num += 1
-        self.network.udt_send(p.get_byte_S())
-       
-     
-    def rdt_3_0_receive(self):
-        ret_S = None
-        byte_S = self.network.udt_receive()
-        self.byte_buffer += byte_S
-        #keep extracting packets - if reordered, could get more than one
-        corrupt = False
-        while True:
-            #check if we have received enough bytes
-            if(len(self.byte_buffer) < Packet.length_S_length):
-                return ret_S, corrupt #not enough bytes to read packet length
-            #extract length of packet
-            length = int(self.byte_buffer[:Packet.length_S_length])
-            if len(self.byte_buffer) < length:
-                return ret_S, corrupt #not enough bytes to read the whole packet
-            #create packet from buffer content and add to return string
             try: 
                 p = Packet.from_byte_S(self.byte_buffer[0:length])
-                ret_S = p.msg_S if (ret_S is None) else ret_S + p.msg_S
+                ret_S = p.msg_S if (ret_S is None) else ret_S + p.msg_S_
             #if packet was corrupt, set corrupt to True
             #will return blank packet and true next iteration
             except:
-                corrupt = True;
+                if(self.role == 'client'):
+                    p = Packet(self.seq_num, self.last_msg)
+                    self.network.udt_send(p.get_byte_S())
+                    ret_S = None
+                    byte_S = self.network.udt_receive()
+                    self.byte_buffer += byte_S
+                    print('\nReceived corrupt packet, resending.\n')
+                    self.time_of_last_data = time.time()
+
+                else:
+                    p = Packet(self.seq_num, 'NACK')
+                    self.network.udt_send(p.get_byte_S()) 
+                    ret_S = None
+                    byte_S = self.network.udt_receive()
+                    self.byte_buffer += byte_S
+                    print('\nReceived corrupt packet, sending NACK.\n')
+                    self.time_of_last_data = time.time()
 
             #remove the packet bytes from the buffer
             self.byte_buffer = self.byte_buffer[length:]
             #if this was the last packet, will return on the next iteration
  
+
 if __name__ == '__main__':
     parser =  argparse.ArgumentParser(description='RDT implementation.')
     parser.add_argument('role', help='Role is either client or server.', choices=['client', 'server'])

@@ -1,5 +1,5 @@
 import argparse
-import rdt_3_0
+import rdt_3_0 
 import time
 
 
@@ -24,9 +24,6 @@ def piglatinize(message):
         essagemay += " "+makePigLatin(word)
     return essagemay.strip()+"."
 
-def NACK():
-    return "NACK" 
-
 
 if __name__ == '__main__':
     parser =  argparse.ArgumentParser(description='Pig Latin conversion server.')
@@ -34,43 +31,26 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     timeout = 5 #close connection if no new data within 5 seconds
-    time_of_last_data = time.time()
+    time_of_last_data = time.time() + 1000000 #added time to prevent timeout
     
     rdt = rdt_3_0.RDT('server', None, args.port)
-    
-    corrupt = False 
     while(True):
         #try to receiver message before timeout
-        msg_S, corrupt = rdt.rdt_3_0_receive()
-        if time_of_last_data + timeout < time.time() or corrupt:
-            #send NACK package  
-            try: 
-                rdt.rdt_3_0_send(NACK())
-            except:
-                print('Client no longer online')
-                break
-            #just to show what happened in print statements
-            if corrupt: 
-                print('\nGot a corrupt package. Sending NACK\n')
+        msg_S = rdt.rdt_3_0_receive()
+        if msg_S is None:
             if time_of_last_data + timeout < time.time():
-                print('\nTimed out. Sending Nack.\n')
-            #reset time_of_last_data to avoid timeout 
-            time_of_last_data = time.time() 
-            #skip over rest of loop so it doesn't try to
-            #piglatinize it
-            msg_S = ''
-        else: 
-            if msg_S is None:
-#                if time_of_last_data + timeout < time.time():
-#                    break
-#                else:
+                break
+            else:
                 continue
-            time_of_last_data = time.time()
-            
-            #convert and reply
-            rep_msg_S = piglatinize(msg_S)
-            print('Converted %s \nto %s\n' % (msg_S, rep_msg_S))
-            rdt.rdt_3_0_send(rep_msg_S)
-            
+#        time_of_last_data = time.time()
+        
+        #convert and reply
+        rep_msg_S = piglatinize(msg_S)
+        print('Converted %s \nto %s\n' % (msg_S, rep_msg_S))
+        rdt.rdt_3_0_send(rep_msg_S)
+        
     rdt.disconnect()
+
+    
+    
     
