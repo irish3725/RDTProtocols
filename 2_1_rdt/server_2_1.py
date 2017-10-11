@@ -1,5 +1,5 @@
 import argparse
-import rdt_2_1
+import rdt_2_1 
 import time
 
 
@@ -24,9 +24,6 @@ def piglatinize(message):
         essagemay += " "+makePigLatin(word)
     return essagemay.strip()+"."
 
-def NACK():
-    return "NACK" 
-
 
 if __name__ == '__main__':
     parser =  argparse.ArgumentParser(description='Pig Latin conversion server.')
@@ -34,36 +31,26 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     timeout = 5 #close connection if no new data within 5 seconds
-    time_of_last_data = time.time()
+    time_of_last_data = time.time() + 1000000 #added time to prevent timeout
     
     rdt = rdt_2_1.RDT('server', None, args.port)
-    
-    corrupt = False 
     while(True):
         #try to receiver message before timeout
-        msg_S, corrupt = rdt.rdt_2_1_receive()
-        if corrupt:
-            print('\nReceived corrupt package. Sending NACK\n')
-            #send NACK package  
-            rdt.rdt_2_1_send(NACK())
-            #print('Got a corrupt package, sending NACK')
-            #reset time_of_last_data to avoid timeout 
-            time_of_last_data = time.time() 
-            #skip over rest of loop so it doesn't try to
-            #piglatinize it
-            msg_S = ''
-        else: 
-            if msg_S is None:
-                if time_of_last_data + timeout < time.time():
-                    break
-                else:
-                    continue
-            time_of_last_data = time.time()
-            
-            #convert and reply
-            rep_msg_S = piglatinize(msg_S)
-            print('Converted %s \nto %s\n' % (msg_S, rep_msg_S))
-            rdt.rdt_2_1_send(rep_msg_S)
-            
+        msg_S = rdt.rdt_2_1_receive()
+        if msg_S is None:
+            if time_of_last_data + timeout < time.time():
+                break
+            else:
+                continue
+#        time_of_last_data = time.time()
+        
+        #convert and reply
+        rep_msg_S = piglatinize(msg_S)
+        print('Converted %s \nto %s\n' % (msg_S, rep_msg_S))
+        rdt.rdt_2_1_send(rep_msg_S)
+        
     rdt.disconnect()
+
+    
+    
     

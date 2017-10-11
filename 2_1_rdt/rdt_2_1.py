@@ -57,6 +57,8 @@ class RDT:
     seq_num = 1
     ## buffer of bytes read from network
     byte_buffer = '' 
+    ## last message sent by whoever is using send
+    last_msg = ''
 
     def __init__(self, role_S, server_S, port):
         self.network = Network.NetworkLayer(role_S, server_S, port)
@@ -65,6 +67,7 @@ class RDT:
         self.network.disconnect()
         
     def rdt_1_0_send(self, msg_S):
+        last_msg = msg_S
         p = Packet(self.seq_num, msg_S)
         self.seq_num += 1
         self.network.udt_send(p.get_byte_S())
@@ -89,8 +92,8 @@ class RDT:
             self.byte_buffer = self.byte_buffer[length:]
             #if this was the last packet, will return on the next iteration
             
-    # so fark exactly the same as 1_0 
     def rdt_2_1_send(self, msg_S):
+        last_msg = msg_S
         p = Packet(self.seq_num, msg_S)
         self.seq_num += 1
         self.network.udt_send(p.get_byte_S())
@@ -101,15 +104,14 @@ class RDT:
         byte_S = self.network.udt_receive()
         self.byte_buffer += byte_S
         #keep extracting packets - if reordered, could get more than one
-        corrupt = False
         while True:
             #check if we have received enough bytes
             if(len(self.byte_buffer) < Packet.length_S_length):
-                return ret_S, corrupt #not enough bytes to read packet length
+                return ret_S #not enough bytes to read packet length
             #extract length of packet
             length = int(self.byte_buffer[:Packet.length_S_length])
             if len(self.byte_buffer) < length:
-                return ret_S, corrupt #not enough bytes to read the whole packet
+                return ret_S #not enough bytes to read the whole packet
             #create packet from buffer content and add to return string
             try: 
                 p = Packet.from_byte_S(self.byte_buffer[0:length])
@@ -117,18 +119,17 @@ class RDT:
             #if packet was corrupt, set corrupt to True
             #will return blank packet and true next iteration
             except:
-                corrupt = True;
+                if(self.role_S == 'client'):
+                    p = Packet(self.seq_num, last_mst)
+                    self.network.ude_send(p.get_byte_S())
+                else:
+                    p = Packet(self.seq_num, 'NACK')
+                    self.network.udt_send(p.get_byte_s()) 
 
             #remove the packet bytes from the buffer
             self.byte_buffer = self.byte_buffer[length:]
             #if this was the last packet, will return on the next iteration
  
-    def rdt_3_0_send(self, msg_S):
-        pass
-        
-    def rdt_3_0_receive(self):
-        pass
-        
 
 if __name__ == '__main__':
     parser =  argparse.ArgumentParser(description='RDT implementation.')

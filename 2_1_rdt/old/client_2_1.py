@@ -1,5 +1,5 @@
 import argparse
-import rdt_2_1 
+import rdt_2_1
 import time
 
 if __name__ == '__main__':
@@ -22,11 +22,35 @@ if __name__ == '__main__':
     for msg_S in msg_L:
         print('Converting: '+msg_S)
         rdt.rdt_2_1_send(msg_S)
-       
-        # try to receive message before timeout 
+      
+        #keep track of last message in case we lose it 
+        last_msg = msg_S 
+        #try to receive message before timeout 
         msg_S = None
+        #where we keep track of whether packet is corrupt
+        #or if receiving a NACK since they are handled
+        #the same.
+        corrupt = False
         while msg_S == None:
-            msg_S = rdt.rdt_2_1_receive()
+            msg_S, corrupt = rdt.rdt_2_1_receive()
+            #check to see if the message was corrupt or
+            #we have received a NACK 
+            if corrupt or msg_S == 'NACK':
+                #just to print what happened
+                if corrupt: 
+                    print('\nGot corrupt package. Resending\n') 
+                if msg_S == 'NACK':
+                    print('\nGot a NACK. Resending\n') 
+                #resend the message
+                rdt.rdt_2_1_send(last_msg)
+                #reset time_of_last_data to avoid timeout
+                time_of_last_data = time.time()
+                #set msg_S back to None
+                msg_S = None 
+                #set corrupt back to False
+                corrupt = False 
+                #skip over rest of loop to avoid printing NACK 
+                continue 
             if msg_S is None:
                 if time_of_last_data + timeout < time.time():
                     break
