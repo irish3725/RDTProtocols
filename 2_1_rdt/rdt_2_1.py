@@ -59,9 +59,12 @@ class RDT:
     byte_buffer = '' 
     ## last message sent by whoever is using send
     last_msg = ''
+    ## who is using this object
+    role = ''
 
     def __init__(self, role_S, server_S, port):
         self.network = Network.NetworkLayer(role_S, server_S, port)
+        role = role_S
     
     def disconnect(self):
         self.network.disconnect()
@@ -119,7 +122,7 @@ class RDT:
             #if packet was corrupt, set corrupt to True
             #will return blank packet and true next iteration
             except:
-                if(self.role_S == 'client'):
+                if(self.role == 'client'):
                     p = Packet(self.seq_num, last_mst)
                     self.network.ude_send(p.get_byte_S())
                 else:
